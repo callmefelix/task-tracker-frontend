@@ -3,7 +3,7 @@ const API_BASE_URL = import.meta.env.VITE_API_BASE_URL || "http://localhost:8080
 
 let authToken = null; // This will store the JWT
 
-export const setAuthToken = (token) => {
+const setAuthToken = (token) => {
     authToken = token;
     if (token) {
         localStorage.setItem('jwt_token', token);

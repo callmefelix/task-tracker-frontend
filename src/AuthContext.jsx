@@ -1,7 +1,8 @@
+/* eslint-disable react-refresh/only-export-components */
 // src/AuthContext.jsx
 import React, { createContext, useContext, useState, useEffect } from 'react';
 //import { useNavigate } from 'react-router-dom'; // Import useNavigate
-import { setAuthToken, getAuthToken, authService } from './api';
+import { getAuthToken, authService } from './api';
 
 const AuthContext = createContext(null);
 

@@ -1,10 +1,6 @@
-import { useEffect, useMemo, useState, useCallback } from "react";
+import { useEffect, useState, useCallback } from "react";
 import { taskService } from "./api"; // Import your task API service
 import { useAuth } from './AuthContext'; // Import useAuth
-
-// Remove STORAGE_KEY and uuid() as backend will handle IDs and storage
-// const STORAGE_KEY = "task_tracker_tasks_v1";
-// const uuid = () => `${Date.now()}-${Math.random().toString(16).slice(2)}`; // Backend will provide ID
 
 const STATUS_OPTIONS = ["TODO", "IN_PROGRESS", "DONE"];
 
