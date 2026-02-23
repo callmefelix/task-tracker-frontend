@@ -1,0 +1,53 @@
+# Configuration for PR labeler
+# Automatically labels PRs based on changed files
+
+documentation:
+  - '**/*.md'
+  - 'docs/**/*'
+
+dependencies:
+  - 'package.json'
+  - 'package-lock.json'
+  - 'yarn.lock'
+
+configuration:
+  - 'vite.config.js'
+  - 'eslint.config.js'
+  - '**/*.env*'
+  - '.gitignore'
+
+docker:
+  - 'Dockerfile'
+  - 'docker-compose.yml'
+  - 'nginx.conf'
+  - '.dockerignore'
+
+ci-cd:
+  - '.github/**/*'
+
+components:
+  - 'src/**/*.jsx'
+  - 'src/**/*.js'
+
+styling:
+  - 'src/**/*.css'
+  - 'src/**/*.scss'
+
+assets:
+  - 'src/assets/**/*'
+  - 'public/**/*'
+
+api:
+  - 'src/api.js'
+  - 'src/**/api/**/*'
+
+authentication:
+  - 'src/Login.jsx'
+  - 'src/Register.jsx'
+  - 'src/AuthContext.jsx'
+
+bugfix:
+  - head-branch: ['^fix', 'fix\\/']
+
+feature:
+  - head-branch: ['^feat', 'feature\\/']

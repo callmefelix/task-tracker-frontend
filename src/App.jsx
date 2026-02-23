@@ -1,92 +1,120 @@
-import { useEffect, useMemo, useState } from "react";
+import { useEffect, useMemo, useState, useCallback } from "react";
+import { taskService } from "./api"; // Import your task API service
+import { useAuth } from './AuthContext'; // Import useAuth
 
-const STORAGE_KEY = "task_tracker_tasks_v1";
+// Remove STORAGE_KEY and uuid() as backend will handle IDs and storage
+// const STORAGE_KEY = "task_tracker_tasks_v1";
+// const uuid = () => `${Date.now()}-${Math.random().toString(16).slice(2)}`; // Backend will provide ID
+
 const STATUS_OPTIONS = ["TODO", "IN_PROGRESS", "DONE"];
 
-function uuid() {
-    return `${Date.now()}-${Math.random().toString(16).slice(2)}`;
-}
-
 function App() {
+    const { logout } = useAuth(); // Get logout function from context
     const [tasks, setTasks] = useState([]);
     const [newTitle, setNewTitle] = useState("");
     const [newDesc, setNewDesc] = useState("");
+    const [loadingTasks, setLoadingTasks] = useState(true);
+    const [error, setError] = useState(null);
 
     const [filterStatus, setFilterStatus] = useState("ALL");
     const [filterQuery, setFilterQuery] = useState("");
+    const [debouncedQuery, setDebouncedQuery] = useState("");
+
+    // Debounce the search query
+    useEffect(() => {
+        const timer = setTimeout(() => {
+            setDebouncedQuery(filterQuery);
+        }, 500); // Wait 500ms after user stops typing
+
+        return () => clearTimeout(timer);
+    }, [filterQuery]);
+
+    const fetchTasks = useCallback(async () => {
+        setLoadingTasks(true);
+        setError(null);
+        try {
+            const data = await taskService.getTasks(filterStatus, debouncedQuery);
+            setTasks(data);
+        } catch (err) {
+            setError("Failed to fetch tasks. Please try again.");
+            console.error("Error fetching tasks:", err);
+            // If it's an auth error, AuthContext might have already handled redirect
+        } finally {
+            setLoadingTasks(false);
+        }
+    }, [filterStatus, debouncedQuery]); // Re-fetch when filters change
 
     useEffect(() => {
-        try {
-            const raw = localStorage.getItem(STORAGE_KEY);
-            if (raw) setTasks(JSON.parse(raw));
-        } catch (e) {
-            console.error("Failed to load tasks from storage", e);
-        }
-    }, []);
+        fetchTasks();
+    }, [fetchTasks]); // Initial fetch and re-fetch on filter changes
 
+    // Auto-dismiss error after 5 seconds
     useEffect(() => {
-        try {
-            localStorage.setItem(STORAGE_KEY, JSON.stringify(tasks));
-        } catch (e) {
-            console.error("Failed to save tasks to storage", e);
+        if (error) {
+            const timer = setTimeout(() => {
+                setError(null);
+            }, 5000);
+            return () => clearTimeout(timer);
         }
-    }, [tasks]);
+    }, [error]);
 
-    const filtered = useMemo(() => {
-        const q = filterQuery.trim().toLowerCase();
-        return tasks.filter((t) => {
-            const statusOk = filterStatus === "ALL" ? true : t.status === filterStatus;
-            const queryOk =
-                q.length === 0
-                    ? true
-                    : (t.title || "").toLowerCase().includes(q) ||
-                    (t.description || "").toLowerCase().includes(q);
-            return statusOk && queryOk;
-        });
-    }, [tasks, filterStatus, filterQuery]);
+    // No longer need `useMemo` for filtering as backend does it
+    const filtered = tasks; // Now `tasks` already contains the filtered data from the API
 
-    function createTask(e) {
+    async function createTask(e) {
         e.preventDefault();
         const title = newTitle.trim();
         const description = newDesc.trim();
 
         if (!title) {
-            alert("Title is required");
+            setError("Title is required");
             return;
         }
 
-        const now = new Date().toISOString();
-        const task = {
-            id: uuid(),
-            title,
-            description,
-            status: "TODO",
-            createdAt: now,
-            updatedAt: now,
-        };
-
-        setTasks((prev) => [task, ...prev]);
-        setNewTitle("");
-        setNewDesc("");
+        setError(null); // Clear any previous errors
+        try {
+            const newTask = await taskService.createTask({ title, description, status: "TODO" });
+            setTasks((prev) => [newTask, ...prev]); // Add new task to the local state
+            setNewTitle("");
+            setNewDesc("");
+        } catch (err) {
+            setError(err.message || "Failed to create task. Please try again.");
+            console.error("Error creating task:", err);
+        }
     }
 
-    function updateTask(id, patch) {
-        setTasks((prev) =>
-            prev.map((t) => {
-                if (t.id !== id) return t;
-                return {
-                    ...t,
-                    ...patch,
-                    updatedAt: new Date().toISOString(),
-                };
-            })
-        );
+    async function updateTask(id, patch) {
+        setError(null); // Clear any previous errors
+        try {
+            const updatedTask = await taskService.updateTask(id, patch);
+            setTasks((prev) =>
+                prev.map((t) => {
+                    if (t.id !== id) return t;
+                    return updatedTask; // Use the updated task from the API response
+                })
+            );
+        } catch (err) {
+            setError(err.message || "Failed to update task. Please try again.");
+            console.error("Error updating task:", err);
+        }
     }
 
-    function deleteTask(id) {
+    async function deleteTask(id) {
         const ok = confirm("Delete this task?");
         if (!ok) return;
-        setTasks((prev) => prev.filter((t) => t.id !== id));
+
+        setError(null); // Clear any previous errors
+        try {
+            await taskService.deleteTask(id); // API call to delete
+            setTasks((prev) => prev.filter((t) => t.id !== id)); // Remove from local state
+        } catch (err) {
+            setError(err.message || "Failed to delete task. Please try again.");
+            console.error("Error deleting task:", err);
+        }
+    }
+
+    if (loadingTasks) {
+        return <div style={{ textAlign: 'center', marginTop: 50 }}>Loading tasks...</div>;
     }
 
     return (
@@ -103,20 +131,68 @@ function App() {
                 boxSizing: "border-box",
             }}
         >
+            {/* Error Alert */}
+            {error && (
+                <div style={{
+                    width: '100%',
+                    padding: 12,
+                    marginBottom: 16,
+                    backgroundColor: '#f8d7da',
+                    border: '1px solid #f5c6cb',
+                    borderRadius: 8,
+                    color: '#721c24',
+                    display: 'flex',
+                    justifyContent: 'space-between',
+                    alignItems: 'center',
+                    boxSizing: 'border-box'
+                }}>
+                    <span>{error}</span>
+                    <button
+                        onClick={() => setError(null)}
+                        style={{
+                            background: 'none',
+                            border: 'none',
+                            color: '#721c24',
+                            fontSize: 20,
+                            cursor: 'pointer',
+                            padding: '0 8px',
+                            lineHeight: 1
+                        }}
+                    >
+                        ×
+                    </button>
+                </div>
+            )}
+
             <header
                 style={{
                     display: "flex",
                     alignItems: "baseline",
-                    justifyContent: "center",
+                    justifyContent: "space-between", // Changed for logout button
                     gap: 12,
                     marginBottom: 16,
                     width: "100%",
                 }}
             >
-                <h1 style={{ margin: 0 }}>Personal Task Tracker</h1>
-                <span style={{ color: "#666" }}>
-          ({filtered.length} / {tasks.length})
-        </span>
+                <div style={{display: 'flex', alignItems: 'baseline', gap: 12}}>
+                    <h1 style={{ margin: 0 }}>Personal Task Tracker</h1>
+                    <span style={{ color: "#666" }}>
+                        ({filtered.length} / {tasks.length})
+                    </span>
+                </div>
+                <button
+                    onClick={logout}
+                    style={{
+                        padding: "8px 12px",
+                        borderRadius: 8,
+                        border: "1px solid #dc3545",
+                        background: "#dc3545",
+                        color: "white",
+                        cursor: "pointer",
+                    }}
+                >
+                    Logout
+                </button>
             </header>
 
             {/* Create */}
@@ -270,12 +346,14 @@ function App() {
             </section>
 
             <footer style={{ marginTop: 22, color: "#777", fontSize: 12, width: "100%", textAlign: "center" }}>
-                Data is stored in localStorage for now. We’ll switch to the Kotlin backend API later.
+                Data is now powered by the Kotlin backend API.
             </footer>
         </div>
     );
 }
 
+// TaskCard component remains largely the same, but it will receive `task.id` which is a UUID from backend
+// Ensure `task.id` is correctly used.
 function TaskCard({ task, onUpdate, onDelete }) {
     const [isEditing, setIsEditing] = useState(false);
     const [title, setTitle] = useState(task.title || "");
@@ -449,6 +527,7 @@ function TaskCard({ task, onUpdate, onDelete }) {
                     </button>
 
                     <div style={{ color: "#888", fontSize: 12, marginTop: 4 }}>
+                        created: {new Date(task.createdAt).toLocaleString()} <br />
                         updated: {new Date(task.updatedAt).toLocaleString()}
                     </div>
                 </div>
