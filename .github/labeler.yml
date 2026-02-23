@@ -1,50 +1,60 @@
-# Configuration for PR labeler
+# Configuration for PR labeler (v5+ format)
 # Automatically labels PRs based on changed files
 
 documentation:
-  - '**/*.md'
-  - 'docs/**/*'
+  - changed-files:
+    - any-glob-to-any-file: '**/*.md'
+    - any-glob-to-any-file: 'docs/**/*'
 
 dependencies:
-  - 'package.json'
-  - 'package-lock.json'
-  - 'yarn.lock'
+  - changed-files:
+    - any-glob-to-any-file: 'package.json'
+    - any-glob-to-any-file: 'package-lock.json'
+    - any-glob-to-any-file: 'yarn.lock'
 
 configuration:
-  - 'vite.config.js'
-  - 'eslint.config.js'
-  - '**/*.env*'
-  - '.gitignore'
+  - changed-files:
+    - any-glob-to-any-file: 'vite.config.js'
+    - any-glob-to-any-file: 'eslint.config.js'
+    - any-glob-to-any-file: '**/*.env*'
+    - any-glob-to-any-file: '.gitignore'
 
 docker:
-  - 'Dockerfile'
-  - 'docker-compose.yml'
-  - 'nginx.conf'
-  - '.dockerignore'
+  - changed-files:
+    - any-glob-to-any-file: 'Dockerfile'
+    - any-glob-to-any-file: 'docker-compose.yml'
+    - any-glob-to-any-file: 'nginx.conf'
+    - any-glob-to-any-file: '.dockerignore'
 
 ci-cd:
-  - '.github/**/*'
+  - changed-files:
+    - any-glob-to-any-file: '.github/**/*'
 
 components:
-  - 'src/**/*.jsx'
-  - 'src/**/*.js'
+  - changed-files:
+    - any-glob-to-any-file: 'src/**/*.jsx'
+    - any-glob-to-any-file: 'src/**/*.js'
 
 styling:
-  - 'src/**/*.css'
-  - 'src/**/*.scss'
+  - changed-files:
+    - any-glob-to-any-file: 'src/**/*.css'
+    - any-glob-to-any-file: 'src/**/*.scss'
 
 assets:
-  - 'src/assets/**/*'
-  - 'public/**/*'
+  - changed-files:
+    - any-glob-to-any-file: 'src/assets/**/*'
+    - any-glob-to-any-file: 'public/**/*'
 
 api:
-  - 'src/api.js'
-  - 'src/**/api/**/*'
+  - changed-files:
+    - any-glob-to-any-file: 'src/api.js'
+    - any-glob-to-any-file: 'src/**/api/**/*'
 
 authentication:
-  - 'src/Login.jsx'
-  - 'src/Register.jsx'
-  - 'src/AuthContext.jsx'
+  - changed-files:
+    - any-glob-to-any-file: 'src/Login.jsx'
+    - any-glob-to-any-file: 'src/Register.jsx'
+    - any-glob-to-any-file: 'src/AuthContext.jsx'
 
 bugfix:
   - head-branch: ['^fix', 'fix\\/']
